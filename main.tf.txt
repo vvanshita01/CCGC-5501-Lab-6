@@ -1,0 +1,70 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_iam_role" "v_custom_role_new" {
+  name = "v_custom_role_new"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "my_custom_policy" {
+  name        = "my_custom_policy"
+  description = "My custom policy for specific tasks"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action   = ["s3:GetObject", "s3:PutObject"],
+        Effect   = "Allow",
+        Resource = ["arn:aws:s3:::vanshita-lab-06", "arn:aws:s3:::vanshita-lab-06/*"]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "v_custom_attachment" {
+  role       = aws_iam_role.v_custom_role_new.name
+  policy_arn = aws_iam_policy.my_custom_policy.arn
+}
+
+resource "aws_s3_bucket" "my_custom_bucket" {
+  bucket = "vanshita-lab-06"
+  tags   = {
+    Env = "lab"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "v_custom_attachment_disassociate" {
+  role       = aws_iam_role.v_custom_role_new.name
+  policy_arn = aws_iam_policy.my_custom_policy.arn
+  depends_on = [aws_s3_bucket.my_custom_bucket] 
+  count      = var.disassociate_policy ? 1 : 0    
+}
+
+resource "aws_iam_role" "v_custom_role_remove" {
+  name = "v_custom_role_remove"
+  count = var.remove_role ? 0 : 1  
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "ec2.amazonaws.com"  
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}

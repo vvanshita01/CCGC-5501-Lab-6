@@ -1,0 +1,7 @@
+variable "remove_role" {
+  default = false
+}
+
+variable "disassociate_policy" {
+  default = false
+}
